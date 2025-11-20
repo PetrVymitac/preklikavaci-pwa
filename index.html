@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Preklikávací obrázky - PWA verze</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#000000">
+
+  <style>
+    html,body{height:100%;margin:0;background:#000}
+    .wrap{height:100%;display:flex;align-items:center;justify-content:center;position:relative}
+    img#viewer{
+      max-width:100%;
+      max-height:100%;
+      width:auto;
+      height:auto;
+      display:block;
+      -webkit-user-drag: none;
+      user-select:none;
+      pointer-events:none;
+    }
+    .msg{
+      position:absolute;
+      left:8px;right:8px;bottom:12px;
+      color:#fff;background:rgba(0,0,0,0.5);padding:8px;border-radius:6px;
+      font-size:14px;text-align:center;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap" id="wrap" aria-live="polite">
+    <img id="viewer" alt="obrazek" />
+    <div class="msg" id="msg">Klikni kamkoliv pro přepnutí</div>
+  </div>
+
+  <script>
+    // seznam obrázků (musí být ve složce img/)
+    const images = ['img/obrazek1.png', 'img/obrazek2.png'];
+    let idx = 0;
+    const viewer = document.getElementById('viewer');
+    const msg = document.getElementById('msg');
+
+    // preload obrázků
+    const preloaded = images.map(src => {
+      const i = new Image();
+      i.src = src;
+      i.onload = () => console.log('preloaded ok:', src);
+      i.onerror = () => console.error('preload ERROR:', src);
+      return i;
+    });
+
+    function showCurrent(){
+      const src = images[idx];
+      console.log('showCurrent ->', src);
+      viewer.src = src;
+      msg.textContent = `Obrázek ${idx+1} / ${images.length} — klikni pro další`;
+    }
+
+    viewer.addEventListener('error', (e) => {
+      console.error('Image load error for', viewer.src, e);
+      msg.textContent = `Chyba při načítání: ${viewer.src}. Zkontroluj jméno souboru a že je ve složce img/.`;
+      viewer.style.display = 'none';
+    });
+
+    viewer.addEventListener('load', () => {
+      viewer.style.display = 'block';
+    });
+
+    function nextImage(){
+      idx = (idx < images.length - 1) ? idx+1 : 0;
+      showCurrent();
+    }
+
+    document.getElementById('wrap').addEventListener('pointerdown', (ev)=>{
+      if (ev.isPrimary === false) return;
+      nextImage();
+    });
+
+    // inicializace
+    showCurrent();
+
+    // registrace service workeru
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js')
+        .then(()=>console.log('Service Worker zaregistrován'))
+        .catch(e=>console.error('SW chyba', e));
+    }
+  </script>
+</body>
+</html>
